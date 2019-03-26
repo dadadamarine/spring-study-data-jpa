@@ -2,6 +2,7 @@ package me.pushstone.demospringdata;
 
 import javax.persistence.*; // 어노테이션들은 javax.persistence 패키지에서 오는걸로 써야함.
 import java.util.Date;
+import java.util.Set;
 
 @Entity(name ="myAccount") // 이 어노테이션 덕분에 db의 테이블과 매핑이 됨 , 사실상 @Table 어노테이션도 생략 되어있음
 //name사용하지 않을시 기본적으로 클래스 이름 사용.
@@ -28,6 +29,20 @@ public class Account {
 
     private String password;
 
+
+    // fk를 가진 study가 기본적으로 주인.
+    @OneToMany(mappedBy = "onwer")// oneToMany쪽에 이 관계가 반대쪽에 뭐라 매핑되있는지, 관계를 정의한 필드를 여기 적어야함. study에서 account를 owner로 정의해둿다.
+    //그래야 얘가 이에 따른 필요 관계를 또 안만들고, Study에 정의된 관계에 종속된 쪽이 됨.
+    private Set<Study> studies;// 끝이 Many로 끝나니까 studies
+
+    public Set<Study> getStudies() {
+        return studies;
+    }
+
+    public void setStudies(Set<Study> studies) {
+        this.studies = studies;
+    }
+
     @Temporal(TemporalType.TIMESTAMP) // 설정가능한거 3개지 , 날짜 시간 날짜+시간 = 타임스탬프
     private Date created = new Date();
 
@@ -40,12 +55,15 @@ public class Account {
     @Embedded // 컴포짓한 타입의 데이터를쓰고싶을경우.
     @AttributeOverrides({
             @AttributeOverride(name ="street", column = @Column(name = "home_street")) // name, column 필수값 , 이렇게 하나씩 매핑하면됨.
+
             //street value를 home_street으로 바꿔서 쓰겠다.
     })//컴포짓한 타입을 두개이상 쓰고싶을경우.
     private Address homeAddress;
 
+/*
     @Embedded
     private Address officeAddress;
+*/
 
     //getter setter는 반드시 필요한게 아님. 없어도 컬럼으로 매핑 됨.
     //spring.jpa.show-sql=true -> db변경정보 보여줌
@@ -73,5 +91,14 @@ public class Account {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public void addStudy(Study study) { // convenient method, 이런식으로 메서드를 만들어서 밑의 두개 소스를 한묶음으로 사용함.
+        this.getStudies().add(study); // -> optional but, 객체 지향적으로는 필요한 코드.
+        study.setOwner(this);
+    }
+    public void removeStudy(Study study) { // convenient method, 이런식으로 메서드를 만들어서 밑의 두개 소스를 한묶음으로 사용함.
+        this.getStudies().remove(study); // -> optional but, 객체 지향적으로는 필요한 코드.
+        study.setOwner(null); // study가 참조하는 애가 더이상 내가 아니게 만듬.
     }
 }
